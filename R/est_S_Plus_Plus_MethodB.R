@@ -311,7 +311,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
   g3 <- list()
   for (i in 1:n_time_points) {
     if (i == 1)
-      g3[[i]] <- (A[, i] - preds_A_XZ_clean[[i]]) * cbind(rep(1, n), X,)
+      g3[[i]] <- (A[, i] - preds_A_XZ_clean[[i]]) * cbind(rep(1, n), X)
     else {
       g3[[i]] <- A[, (i - 1)] * (A[, i] - preds_A_XZ_clean[[i]]) *
         cbind(rep(1, n), X, Z[[i]])
@@ -525,7 +525,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
   Expect_AZ_X <- list()   # nolint
   Expect_AA_X <- list()   # nolint
   Expect_AA_Z_X <- list() # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
     prob_remove <- paste("prob", i, sep = "")
     Expect_AZ_X[[i]] <- Expect_A_X *
@@ -536,7 +536,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
       Expect_res_t[, prob_remove]
   }
 
-  for (i in 2:n_time_points) {
+  for (i in 1:n_time_points) {
       names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
       prob_remove <- paste("prob", i, sep = "")
       Expect_AA_X[[i]] <- Expect_A_X *
