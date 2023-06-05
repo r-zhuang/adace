@@ -154,7 +154,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
   Z <- lapply(Z, as.matrix) # nolint
   n_time_points <- length(Z)
   n <- nrow(X)
-  Z_mat <- matrix(unlist(Z[1]), nrow = dim(X)[1]) # nolint
+  Z_mat <- matrix(unlist(Z[-1]), nrow = dim(X)[1]) # nolint
 
   # Provide column names for X, Z, A
   X_col_names <- paste("X_", 1:dim(X)[2], sep = "") # nolint
@@ -198,7 +198,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
     if (dim(Z[[i]])[2] > 1) {
       sigma_mats_Z[[i]] <- cov(models_Z_X[[i]]$residuals)
     } else {
-      sigma_mats_Z[[i]] <- matrix(var(models_Z_X[[i]]$residuals), 
+      sigma_mats_Z[[i]] <- matrix(var(models_Z_X[[i]]$residuals),
                                   1, 1)
     }
   }
@@ -237,11 +237,11 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
                    names_expa, names_expaz)
   }
   colnames(Expect_res_t) <- names_vec
-  
+
   prob1_expa1 <- cbind(preds_A_XZ[[1]],preds_A_XZ[[1]]*(1-preds_A_XZ[[1]]))
   colnames(prob1_expa1) <- c("prob1","expa1")
   Expect_res_t <- cbind(Expect_res_t,prob1_expa1)
-  
+
   names_vec <- c(names_vec, c("prob1","expa1"))
 
   # Calculate the probability of adherence at the end of study
@@ -266,7 +266,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
       Expect_res_t[, grepl(names_target[3], names_vec)] /
       Expect_res_t[, prob_remove]
   }
-  
+
   for (i in 1:n_time_points) {
     names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
     prob_remove <- paste("prob", i, sep = "")
@@ -510,8 +510,8 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
   colnames(Expect_res_t) <- names_vec
   Expect_res_t <- cbind(Expect_res_t,prob1_expa1)
   names_vec <- c(names_vec, c("prob1","expa1"))
-  
-  
+
+
 
   # Calculate the probability of adherence at the end of study
   probs_vec <- paste("prob", 1:n_time_points, sep = "")
@@ -535,7 +535,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
       Expect_res_t[, grepl(names_target[3], names_vec)] /
       Expect_res_t[, prob_remove]
   }
-  
+
   for (i in 2:n_time_points) {
       names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
       prob_remove <- paste("prob", i, sep = "")
