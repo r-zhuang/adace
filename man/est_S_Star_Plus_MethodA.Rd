@@ -134,9 +134,9 @@ The est_S_Star_Plus_MethodA function produces estimation of treatment
  fit <- est_S_Star_Plus_MethodA(X, A, Z, Y, TRT)
  fit
  # Calculate the true values
- true1 =  mean(Y1[A1_3==1])
+ true1 <- mean(Y1[A1[,n_t]==1])
  true1
- true0 =  mean(Y0[A1_3==1])
+ true0 <- mean(Y0[A1[,n_t]==1])
  true0
  true_d  =  true1 - true0
  true_d
