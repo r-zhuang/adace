@@ -167,33 +167,38 @@ for (i in 1:n_time_points) {
 }
 z_cbind <- do.call(cbind, Z[-1])
 data <- data.frame(X, TRT, z_cbind, Y, A)
-form1 <- formula(paste("A_1 ~ ", paste(c(x_col_names, colnames(z_cbind)[grep("Z_1",
-                                                                             colnames(z_cbind))]), collapse = " + ")))
+form1 <- formula(paste("A_1 ~ ", paste(c(x_col_names,
+                                         colnames(z_cbind)[grep("Z_1",
+                                      colnames(z_cbind))]), collapse = " + ")))
 models_A_XZ <- list()
 models_A_XZ[[1]] <- glm(form1, family = "binomial", data = data,
                         control = list(maxit = 50))
 for (i in 2:n_time_points) {
   Z_id <- paste("Z_", i, sep = "")
   form <- as.formula(paste(a_col_names[i], paste(c(x_col_names,
-                                                   colnames(z_cbind)[grep(Z_id, colnames(z_cbind))]),
+                                                   colnames(z_cbind)[grep(Z_id,
+                                                          colnames(z_cbind))]),
                                                  collapse = "+"), sep = " ~ "))
   models_A_XZ[[i]] <- glm(form, family = "binomial", data = data[A[,
-                                                                   (i - 1)] == 1, ], control = list(maxit = 50))
+                                  (i - 1)] == 1, ], control = list(maxit = 50))
 }
 coefs_A_XZ <- list()
 preds_A_XZ <- list()
 for (i in 1:n_time_points) {
   coefs_A_XZ[[i]] <- c(models_A_XZ[[i]]$coef)
   preds_A_XZ[[i]] <- pmax(pmin(predict(models_A_XZ[[i]],
-                                       newdata = data, type = "response"), 0.99), 0.01)
+                                       newdata = data, type = "response"),
+                               0.99), 0.01)
 }
 models_Z_X <- list()
 cov_Z_X <- list()
 for (i in 2:n_time_points) {
   Z_id <- paste("Z_", i, sep = "")
   form <- paste("cbind(", paste(colnames(z_cbind)[grep(Z_id,
-                                                       colnames(z_cbind))], collapse = ","), ")~", paste(c(x_col_names,
-                                                                                                           "TRT"), collapse = "+"), sep = "")
+                                                       colnames(z_cbind))],
+                                collapse = ","), ")~", paste(c(x_col_names,
+                                              "TRT"), collapse = "+"), sep = "")
+
   models_Z_X[[i]] <- lm(form, data = data.frame(data))
   if (dim(Z[[i]])[2] > 1) {
     cov_Z_X[[i]] <- cov(models_Z_X[[i]]$residuals)
@@ -206,7 +211,8 @@ for (i in 2:n_time_points) {
 Zs1_pred <- list()
 for (i in 2:n_time_points) {
   Zs1_pred[[i]] <- predict(models_Z_X[[i]], newdata = data.frame(X,
-                                                                 TRT = rep(1, nrow(X))))
+                                                                 TRT =
+                                                              rep(1, nrow(X))))
 }
 coefs_Z_1X <- list()
 for (i in 2:n_time_points) {
@@ -218,26 +224,31 @@ for (i in 2:n_time_points) {
   coefs_Z_1X[[i]] <- rbind(coef_intercept, coef_Xs)
 }
 model_y1_X_Z1 <- paste("Y~", paste("X_", 1:dim(X)[2], sep = "",
-                                   collapse = "+"), "+", paste(colnames(z_cbind), sep = "",
-                                                               collapse = "+"), sep = "")
+                                   collapse = "+"), "+",
+                       paste(colnames(z_cbind), sep = "",
+                                                      collapse = "+"), sep = "")
+
 fit_y1_X_Z1 <- lm(model_y1_X_Z1, data = data[TRT == 1 & A[,
-                                                          n_time_points] == 1, ])
+                                                      n_time_points] == 1, ])
 psi1_X_Z1 <- predict(fit_y1_X_Z1, newdata = data)
 beta1_hat <- c(fit_y1_X_Z1$coef)
 Expect_res <- apply(X, 1, Expect_function1D_MA_1, n_time_points = n_time_points,
                     gammas = coefs_A_XZ, alphas = coefs_Z_1X, Sigmas = cov_Z_X)
 #names_vec <- c("prob1", paste("expz_1_", 1:dim(Z[[1]])[2],
-#                              sep = ""), paste("expz^2_1_", 1:(dim(Z[[1]])[2])^2, sep = ""),
+#                              sep = ""), paste("expz^2_1_",
+#               1:(dim(Z[[1]])[2])^2, sep = ""),
 #               "expa1", paste("expaz_1_", 1:dim(Z[[1]])[2], sep = ""),
 #               paste("expaz^2_1_", 1:(dim(Z[[1]])[2])^2, sep = ""))
 names_vec <- c()
 for (i in 2:n_time_points) {
   names_temp <- c(paste("prob", i, sep = ""), paste("expz_",
-                                                    i, "_", 1:dim(Z[[i]])[2], sep = ""), paste("expz^2_",
-                                                                                               i, "_", 1:(dim(Z[[i]])[2])^2, sep = ""), paste("expa",
-                                                                                                                                              i, sep = ""), paste("expaz_", i, "_", 1:dim(Z[[i]])[2],
-                                                                                                                                                                  sep = ""), paste("expaz^2_", i, "_", 1:(dim(Z[[i]])[2])^2,
-                                                                                                                                                                                   sep = ""))
+                                                    i, "_", 1:dim(Z[[i]])[2],
+                                                    sep = ""), paste("expz^2_",
+                          i, "_", 1:(dim(Z[[i]])[2])^2, sep = ""),
+                  paste("expa",
+                        i, sep = ""), paste("expaz_", i, "_", 1:dim(Z[[i]])[2],
+                    sep = ""), paste("expaz^2_", i, "_", 1:(dim(Z[[i]])[2])^2,
+                                                      sep = ""))
   names_vec <- c(names_vec, names_temp)
 }
 rownames(Expect_res) <- names_vec
@@ -260,33 +271,53 @@ Expect_AA_Z_X <- list()
 for (i in 2:n_time_points) {
   prob_remove <- paste("prob", i, sep = "")
   Expect_AY_X <- Expect_AY_X + Expect_A_X * beta1_hat[paste("Z_",
-                                                            i, "_", 1:dim(Z[[i]])[2], sep = "")] %*% Expect_res[paste("expz_",
-                                                                                                                      i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE]/Expect_res[prob_remove,
-                                                                                                                                                                                      , drop = FALSE]
+                                                            i, "_",
+                                                            1:dim(Z[[i]])[2],
+                                                            sep = "")] %*%
+                                                      Expect_res[paste("expz_",
+                                                      i, "_", 1:dim(Z[[i]])[2],
+                                                      sep = ""), ,
+                                                      drop = FALSE]/
+                                                        Expect_res[prob_remove,
+                                                              , drop = FALSE]
   Expect_AZ_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expz_",
-                                                        i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                        i, "_", 1:dim(Z[[i]])[2]
+                                                        , sep = ""), ,
+                                                  drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                         ])
   Expect_AA_Z_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expaz_",
-                                                          i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                          i, "_",
+                                                          1:dim(Z[[i]])[2],
+                                                          sep = ""), ,
+                                                    drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                           ])
 }
 
 for (i in 1:n_time_points) {
   prob_remove <- paste("prob", i, sep = "")
   Expect_AA_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expa",
-                                                        i, sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                        i, sep = ""), ,
+                                                  drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                         ])
 }
 Expect_AY_X <- as.numeric(cbind(rep(1, n), X) %*% beta1_hat[1:(nX +
-                                                                 1)]) * Expect_A_X + as.numeric(Expect_AY_X)
+                                                                 1)]) *
+  Expect_A_X + as.numeric(Expect_AY_X)
 Expect_AYZ_X <- expect_AYZ_X_MApp(Z, X, n, nX, n_time_points,
-                                  Expect_res, beta1_hat, Expect_A_X, Expect_AZ_X)
+                                  Expect_res, beta1_hat, Expect_A_X,
+                                  Expect_AZ_X)
 Expect_AA_Y_X <- expect_AA_Y_X_MApp(Z, X, n, nX, n_time_points,
-                                    Expect_res, beta1_hat, Expect_A_X, Expect_AA_X)
+                                    Expect_res, beta1_hat, Expect_A_X,
+                                    Expect_AA_X)
 Expect_AA_YZ_X <- expect_AA_YZ_X_MApp(Z, X, n, nX, n_time_points,
-                                      Expect_res, beta1_hat, Expect_A_X, Expect_AA_Z_X)
+                                      Expect_res, beta1_hat, Expect_A_X,
+                                      Expect_AA_Z_X)
 res1 <- sum((1 - TRT) * A[, n_time_points] * Expect_AY_X)/sum((1 -
-                                                                 TRT) * A[, n_time_points] * Expect_A_X)
+                                                                 TRT) *
+                                                A[, n_time_points] * Expect_A_X)
 g1 <- TRT * A[, n_time_points] * (Y - psi1_X_Z1) * cbind(rep(1,
                                                              n), X, z_cbind)
 g1[A[, n_time_points] == 0, ] <- 0
@@ -295,10 +326,12 @@ covariate_long[2:n_time_points] <- lapply(models_Z_X[-1], model.matrix.lm)
 
 g2 <- list()
 for (i in 2:n_time_points) {
-  g2[[i]] <- array(apply(models_Z_X[[i]]$model[[1]] - models_Z_X[[i]]$fitted.values,
+  g2[[i]] <- array(apply(models_Z_X[[i]]$model[[1]] -
+                           models_Z_X[[i]]$fitted.values,
                          2, function(x) {
                            covariate_long[[i]] * x
-                         }), dim = c(dim(covariate_long[[i]]), dim(models_Z_X[[i]]$model[[1]])[2]))
+                         }), dim = c(dim(covariate_long[[i]]),
+                                     dim(models_Z_X[[i]]$model[[1]])[2]))
 }
 preds_A_XZ_clean <- lapply(preds_A_XZ, NA_replace)
 g3 <- list()
@@ -317,7 +350,8 @@ g4 <- (1 - TRT) * A[, n_time_points] * Expect_AY_X
 g5 <- (1 - TRT) * A[, n_time_points] * Expect_A_X
 partial_g4_beta <- c(mean((1 - TRT) * A[, n_time_points] *
                             Expect_A_X), apply(X, 2, function(x) {
-                              mean((1 - TRT) * A[, n_time_points] * Expect_A_X * x)
+                              mean((1 - TRT) * A[, n_time_points] *
+                                     Expect_A_X * x)
                             }), unlist(sapply(Expect_AZ_X[-1], function(x) {
                               colMeans((1 - TRT) * A[, n_time_points] * t(x))
                             })))
@@ -328,9 +362,10 @@ for (i in 2:n_time_points) {
                                        t(Expect_AY_X * Zs1_pred[[i]])))
   partial_g4_alpha_z1 <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                         ncol = 1)
-  partial_g4_alpha_z1x <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(matrix(mapply(outer,
-                                                                                split(partial_vec, col(partial_vec)), split(X, row(X))),
-                                                                         ncol = n)), dim(Z[[i]])[2], dim(X)[2])
+  partial_g4_alpha_z1x <- solve(cov_Z_X[[i]]) %*%
+    matrix(rowMeans(matrix(mapply(outer,
+                        split(partial_vec, col(partial_vec)), split(X, row(X))),
+                                         ncol = n)), dim(Z[[i]])[2], dim(X)[2])
   partial_g4_alpha_z1t <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                          ncol = 1)
   partial_g4_alpha[[i]] <- cbind(partial_g4_alpha_z1, partial_g4_alpha_z1x,
@@ -342,14 +377,15 @@ for (i in 1:n_time_points) {
     constant <- (1 - TRT) * A[, n_time_points]
     vec1 <- Expect_AA_Y_X[[i]]
     partial_g4_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)))
+                                                  as.numeric(constant * vec1)))
   } else {
     constant <- (1 - TRT) * A[, n_time_points]
     vec1 <- Expect_AA_Y_X[[i]]
     vec2 <- Expect_AA_YZ_X[[i]]
     partial_g4_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)), colMeans(constant *
-                                                                                                          t(vec2)))
+                                                  as.numeric(constant * vec1)),
+                               colMeans(constant *
+                                                                       t(vec2)))
   }
 }
 partial_g5_beta <- 0
@@ -359,9 +395,10 @@ for (i in 2:n_time_points) {
                                        t(Expect_A_X * Zs1_pred[[i]])))
   partial_g5_alpha_z1 <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                         ncol = 1)
-  partial_g5_alpha_z1x <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(matrix(mapply(outer,
-                                                                                split(partial_vec, col(partial_vec)), split(X, row(X))),
-                                                                         ncol = n)), dim(Z[[i]])[2], dim(X)[2])
+  partial_g5_alpha_z1x <- solve(cov_Z_X[[i]]) %*%
+    matrix(rowMeans(matrix(mapply(outer,
+                        split(partial_vec, col(partial_vec)), split(X, row(X))),
+                                          ncol = n)), dim(Z[[i]])[2], dim(X)[2])
   partial_g5_alpha_z1t <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                          ncol = 1)
   partial_g5_alpha[[i]] <- cbind(partial_g5_alpha_z1, partial_g5_alpha_z1x,
@@ -373,14 +410,14 @@ for (i in 1:n_time_points) {
     constant <- (1 - TRT) * A[, n_time_points]
     vec1 <- Expect_AA_X[[i]]
     partial_g5_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)))
+                                                  as.numeric(constant * vec1)))
   } else {
     constant <- (1 - TRT) * A[, n_time_points]
     vec1 <- Expect_AA_X[[i]]
     vec2 <- Expect_AA_Z_X[[i]]
     partial_g5_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)), colMeans(constant *
-                                                                                                          t(vec2)))
+                              as.numeric(constant * vec1)), colMeans(constant *
+                                                                       t(vec2)))
   }
 }
 covariate <- cbind(rep(1, n), X, z_cbind)
@@ -397,19 +434,22 @@ for (i in 1:n_time_points) {
   if (i == 1) {
     covariate_i <- cbind(rep(1, n), X)
     partial_g3_gamma[[i]] <- -t(covariate_i) %*% (covariate_i *
-                                                    preds_A_XZ[[i]] * (1 - preds_A_XZ[[i]]))/n
+                                                    preds_A_XZ[[i]] *
+                                                    (1 - preds_A_XZ[[i]]))/n
   }
   else {
     covariate_i <- cbind(rep(1, n), X, Z[[i]])[A[, i -
                                                    1] != 0, ]
     A_pred_sub <- preds_A_XZ[[i]][A[, i - 1] != 0]
     partial_g3_gamma[[i]] <- -t(covariate_i) %*% (covariate_i *
-                                                    A_pred_sub * (1 - A_pred_sub))/n
+                                                    A_pred_sub *
+                                                    (1 - A_pred_sub))/n
   }
 }
 tau_est1 <- res1
 se_main <- -g1 %*% inv_svd(partial_g1_beta) %*% (partial_g4_beta -
-                                                   tau_est1 * partial_g5_beta)/mean(g5)
+                                                   tau_est1 *
+                                                   partial_g5_beta)/mean(g5)
 se_g2 <- se_g3 <- 0
 for (i in 2:n_time_points) {
   non_miss <- rowMeans(is.na(Z[[i]])) == 0
@@ -429,16 +469,17 @@ for (i in 1:n_time_points) {
 se1 <- as.numeric(se_main + se_g2 + se_g3) + as.numeric(1/mean(g5) *
                                                           (g4 - tau_est1 * g5))
 model_y0_X_Z0 <- paste("Y~", paste("X_", 1:dim(X)[2], sep = "",
-                                   collapse = "+"), "+", paste(colnames(z_cbind), sep = "",
-                                                               collapse = "+"), sep = "")
+                                   collapse = "+"), "+",
+                       paste(colnames(z_cbind), sep = "",
+                                            collapse = "+"), sep = "")
 fit_y0_X_Z0 <- lm(model_y0_X_Z0, data = data[TRT == 0 & A[,
-                                                          n_time_points] == 1, ])
+                                                        n_time_points] == 1, ])
 psi0_X_Z0 <- predict(fit_y0_X_Z0, newdata = data)
 beta0_hat <- c(fit_y0_X_Z0$coef)
 Zs0_pred <- list()
 for (i in 2:n_time_points) {
   Zs0_pred[[i]] <- predict(models_Z_X[[i]], newdata = data.frame(X,
-                                                                 TRT = rep(0, nrow(X))))
+                                                        TRT = rep(0, nrow(X))))
 }
 coefs_Z_0X <- list()
 for (i in 2:n_time_points) {
@@ -451,17 +492,22 @@ for (i in 2:n_time_points) {
 Expect_res <- apply(X, 1, Expect_function1D_MA_1, n_time_points = n_time_points,
                     gammas = coefs_A_XZ, alphas = coefs_Z_0X, Sigmas = cov_Z_X)
 #names_vec <- c("prob1", paste("expz_1_", 1:dim(Z[[1]])[2],
-#                              sep = ""), paste("expz^2_1_", 1:(dim(Z[[1]])[2])^2, sep = ""),
+#                              sep = ""), paste("expz^2_1_",
+#                                       1:(dim(Z[[1]])[2])^2, sep = ""),
 #               "expa1", paste("expaz_1_", 1:dim(Z[[1]])[2], sep = ""),
 #               paste("expaz^2_1_", 1:(dim(Z[[1]])[2])^2, sep = ""))
 names_vec <- c()
 for (i in 2:n_time_points) {
   names_temp <- c(paste("prob", i, sep = ""), paste("expz_",
-                                                    i, "_", 1:dim(Z[[i]])[2], sep = ""), paste("expz^2_",
-                                                                                               i, "_", 1:(dim(Z[[i]])[2])^2, sep = ""), paste("expa",
-                                                                                                                                              i, sep = ""), paste("expaz_", i, "_", 1:dim(Z[[i]])[2],
-                                                                                                                                                                  sep = ""), paste("expaz^2_", i, "_", 1:(dim(Z[[i]])[2])^2,
-                                                                                                                                                                                   sep = ""))
+                                                    i, "_", 1:dim(Z[[i]])[2],
+                                                    sep = ""), paste("expz^2_",
+                                                   i, "_", 1:(dim(Z[[i]])[2])^2,
+                                                   sep = ""), paste("expa",
+                                                   i, sep = ""), paste("expaz_",
+                                                      i, "_", 1:dim(Z[[i]])[2],
+                                                   sep = ""), paste("expaz^2_",
+                                                  i, "_", 1:(dim(Z[[i]])[2])^2,
+                                                                sep = ""))
   names_vec <- c(names_vec, names_temp)
 }
 rownames(Expect_res) <- names_vec
@@ -482,34 +528,55 @@ Expect_AA_Z_X <- list()
 for (i in 2:n_time_points) {
   prob_remove <- paste("prob", i, sep = "")
   Expect_AY_X <- Expect_AY_X + Expect_A_X * beta0_hat[paste("Z_",
-                                                            i, "_", 1:dim(Z[[i]])[2], sep = "")] %*% Expect_res[paste("expz_",
-                                                                                                                      i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE]/Expect_res[prob_remove,
-                                                                                                                      ]
+                                                            i, "_",
+                                                            1:dim(Z[[i]])[2],
+                                                            sep = "")] %*%
+                                                      Expect_res[paste("expz_",
+                                                      i, "_", 1:dim(Z[[i]])[2],
+                                                      sep = ""), ,
+                                                      drop = FALSE]/
+                                                        Expect_res[prob_remove,
+                                                                              ]
   Expect_AZ_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expz_",
-                                                        i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                        i, "_",
+                                                        1:dim(Z[[i]])[2],
+                                                        sep = ""), ,
+                                                  drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                         ])
   Expect_AA_Z_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expaz_",
-                                                          i, "_", 1:dim(Z[[i]])[2], sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                          i, "_",
+                                                          1:dim(Z[[i]])[2],
+                                                          sep = ""), ,
+                                                    drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                           ])
 }
 
 for (i in 1:n_time_points) {
   prob_remove <- paste("prob", i, sep = "")
   Expect_AA_X[[i]] <- t(Expect_A_X * t(Expect_res[paste("expa",
-                                                        i, sep = ""), , drop = FALSE])/Expect_res[prob_remove,
+                                                        i, sep = ""), ,
+                                                  drop = FALSE])/
+                                                      Expect_res[prob_remove,
                                                         ])
 }
 
 Expect_AY_X <- as.numeric(cbind(rep(1, n), X) %*% beta0_hat[1:(nX +
-                                                                 1)]) * Expect_A_X + as.numeric(Expect_AY_X)
+                                                                 1)]) *
+  Expect_A_X + as.numeric(Expect_AY_X)
 Expect_AYZ_X <- expect_AYZ_X_MApp(Z, X, n, nX, n_time_points,
-                                  Expect_res, beta0_hat, Expect_A_X, Expect_AZ_X)
+                                  Expect_res, beta0_hat, Expect_A_X,
+                                  Expect_AZ_X)
 Expect_AA_Y_X <- expect_AA_Y_X_MApp(Z, X, n, nX, n_time_points,
-                                    Expect_res, beta0_hat, Expect_A_X, Expect_AA_X)
+                                    Expect_res, beta0_hat, Expect_A_X,
+                                    Expect_AA_X)
 Expect_AA_YZ_X <- expect_AA_YZ_X_MApp(Z, X, n, nX, n_time_points,
-                                      Expect_res, beta0_hat, Expect_A_X, Expect_AA_Z_X)
+                                      Expect_res, beta0_hat, Expect_A_X,
+                                      Expect_AA_Z_X)
 res0 <- sum(TRT * A[, n_time_points] * Expect_AY_X)/sum(TRT *
-                                                          A[, n_time_points] * Expect_A_X)
+                                                          A[, n_time_points] *
+                                                          Expect_A_X)
 g1 <- (1 - TRT) * A[, n_time_points] * (Y - psi0_X_Z0) *
   cbind(rep(1, n), X, z_cbind)
 g1[A[, n_time_points] == 0, ] <- 0
@@ -528,9 +595,10 @@ for (i in 2:n_time_points) {
                                        t(Expect_AY_X * Zs0_pred[[i]])))
   partial_g4_alpha_z1 <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                         ncol = 1)
-  partial_g4_alpha_z1x <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(matrix(mapply(outer,
-                                                                                split(partial_vec, col(partial_vec)), split(X, row(X))),
-                                                                         ncol = n)), dim(Z[[i]])[2], dim(X)[2])
+  partial_g4_alpha_z1x <- solve(cov_Z_X[[i]]) %*%
+    matrix(rowMeans(matrix(mapply(outer,
+                        split(partial_vec, col(partial_vec)), split(X, row(X))),
+                                          ncol = n)), dim(Z[[i]])[2], dim(X)[2])
   partial_g4_alpha_z1t <- matrix(0, nrow = dim(Z[[i]])[2],
                                  ncol = 1)
   partial_g4_alpha[[i]] <- cbind(partial_g4_alpha_z1, partial_g4_alpha_z1x,
@@ -542,14 +610,14 @@ for (i in 1:n_time_points) {
     constant <- TRT * A[, n_time_points]
     vec1 <- Expect_AA_Y_X[[i]]
     partial_g4_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)))
+                                                  as.numeric(constant * vec1)))
   } else {
     constant <- TRT * A[, n_time_points]
     vec1 <- Expect_AA_Y_X[[i]]
     vec2 <- Expect_AA_YZ_X[[i]]
     partial_g4_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)), colMeans(constant *
-                                                                                                          t(vec2)))
+                              as.numeric(constant * vec1)), colMeans(constant *
+                                                                      t(vec2)))
   }
 }
 partial_g5_beta <- 0
@@ -559,9 +627,10 @@ for (i in 2:n_time_points) {
                                        t(Expect_A_X * Zs0_pred[[i]])))
   partial_g5_alpha_z1 <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(partial_vec),
                                                         ncol = 1)
-  partial_g5_alpha_z1x <- solve(cov_Z_X[[i]]) %*% matrix(rowMeans(matrix(mapply(outer,
-                                                                                split(partial_vec, col(partial_vec)), split(X, row(X))),
-                                                                         ncol = n)), dim(Z[[i]])[2], dim(X)[2])
+  partial_g5_alpha_z1x <- solve(cov_Z_X[[i]]) %*%
+    matrix(rowMeans(matrix(mapply(outer,
+                        split(partial_vec, col(partial_vec)), split(X, row(X))),
+                                          ncol = n)), dim(Z[[i]])[2], dim(X)[2])
   partial_g5_alpha_z1t <- matrix(0, nrow = dim(Z[[i]])[2],
                                  ncol = 1)
   partial_g5_alpha[[i]] <- cbind(partial_g5_alpha_z1, partial_g5_alpha_z1x,
@@ -573,14 +642,14 @@ for (i in 1:n_time_points) {
     constant <- TRT * A[, n_time_points]
     vec1 <- Expect_AA_X[[i]]
     partial_g5_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)))
+                                                  as.numeric(constant * vec1)))
   } else {
     constant <- TRT * A[, n_time_points]
     vec1 <- Expect_AA_X[[i]]
     vec2 <- Expect_AA_Z_X[[i]]
     partial_g5_gamma[[i]] <- c(mean(constant * vec1), colMeans(X *
-                                                                 as.numeric(constant * vec1)), colMeans(constant *
-                                                                                                          t(vec2)))
+                              as.numeric(constant * vec1)), colMeans(constant *
+                                                                       t(vec2)))
   }
 }
 covariate <- cbind(rep(1, n), X, z_cbind)
@@ -589,7 +658,8 @@ covariate_T0A0 <- covariate[TRT == 0 & A[, n_time_points] ==
 partial_g1_beta <- -t(covariate_T0A0) %*% covariate_T0A0/n
 tau_est0 <- res0
 se_main <- -g1 %*% inv_svd(partial_g1_beta) %*% (partial_g4_beta -
-                                                   tau_est0 * partial_g5_beta)/mean(g5)
+                                                   tau_est0 *
+                                                   partial_g5_beta)/mean(g5)
 se_g2 <- se_g3 <- 0
 for (i in 2:n_time_points) {
   non_miss <- rowMeans(is.na(Z[[i]])) == 0
@@ -624,8 +694,8 @@ RVAL <- list(trt_diff = res,   # nolint
 return(RVAL)
 }
 
-expect_AYZ_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat, # nolint
-                              Expect_A_X, Expect_AZ_X) {                        # nolint
+expect_AYZ_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat,
+                              Expect_A_X, Expect_AZ_X) {
   rval <- list()
   for (i in 2:n_time_points) {
     rval[[i]] <- 0
@@ -636,7 +706,8 @@ expect_AYZ_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat, 
         Expect_res_removed <- Expect_res[prob_remove, ] # nolint
         target_mat <- Expect_res[names_target, , drop = FALSE]
         target_mat <-  apply(target_mat, 2, function(x) {matrix(x, # nolint
-                                                                dim(Z[[j]])[2], dim(Z[[j]])[2]) %*%
+                                                                dim(Z[[j]])[2],
+                                                            dim(Z[[j]])[2]) %*%
             matrix(beta_hat[paste("Z_", i, "_", 1:dim(Z[[j]])[2], sep = "")],
                    nrow = dim(Z[[j]])[2])
         })
@@ -645,11 +716,13 @@ expect_AYZ_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat, 
         }
       } else {
         target_mat <- matrix(beta_hat[paste("Z_", j, "_", 1:dim(Z[[j]])[2],
-                                            sep = "")], ncol = dim(Z[[j]])[2]) %*%
+                                            sep = "")],
+                             ncol = dim(Z[[j]])[2]) %*%
           Expect_res[paste("expz_", j, "_",
                            1:dim(Z[[j]])[2], sep = ""), , drop = FALSE]
         target_mat <- t(t(Expect_res[paste("expz_", i, "_", 1:dim(Z[[i]])[2],
-                                           sep = ""), , drop = FALSE]) * as.numeric(target_mat))
+                                           sep = ""), , drop = FALSE]) *
+                          as.numeric(target_mat))
         prob_remove <- c(paste("prob", i, sep = ""),
                          paste("prob", j, sep = ""))
         Expect_res_removed <- apply(Expect_res[prob_remove, ,   # nolint
@@ -665,7 +738,7 @@ expect_AYZ_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat, 
   return(rval)
 }
 
-expect_AA_Y_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat, # nolint
+expect_AA_Y_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat,
                                Expect_A_X, Expect_AA_X) { # nolint
   rval <- list()
   for (i in 1:n_time_points) {
@@ -675,7 +748,8 @@ expect_AA_Y_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat,
         prob_remove <- paste("prob", j, sep = "")
         Expect_res_removed <- Expect_res[prob_remove, ] # nolint
         target_mat <- matrix(beta_hat[paste("Z_", j, "_", 1:dim(Z[[j]])[2],
-                                            sep = "")], ncol = dim(Z[[j]])[2]) %*%
+                                            sep = "")],
+                             ncol = dim(Z[[j]])[2]) %*%
           Expect_res[paste("expz_", j, "_",
                            1:dim(Z[[j]])[2], sep = ""), , drop = FALSE]
         rval[[i]] <- rval[[i]] +
@@ -688,7 +762,8 @@ expect_AA_Y_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat,
           prob_remove <- paste("prob", j, sep = "")
           Expect_res_removed <- Expect_res[prob_remove, ] # nolint
           target_mat <- matrix(beta_hat[paste("Z_", j, "_", 1:dim(Z[[j]])[2],
-                                              sep = "")], ncol = dim(Z[[j]])[2]) %*%
+                                              sep = "")],
+                               ncol = dim(Z[[j]])[2]) %*%
             Expect_res[paste("expaz_", j, "_",
                              1:dim(Z[[j]])[2], sep = ""), , drop = FALSE]
         } else {
@@ -712,9 +787,9 @@ expect_AA_Y_X_MApp <- function(Z, X, n, nX, n_time_points, Expect_res, beta_hat,
   return(rval)
 }
 
-expect_AA_YZ_X_MApp <- function(Z, X, n, nX, n_time_points,                     # nolint
-                                Expect_res, beta_hat,                           # nolint
-                                Expect_A_X, Expect_AA_Z_X) {                    # nolint
+expect_AA_YZ_X_MApp <- function(Z, X, n, nX, n_time_points,
+                                Expect_res, beta_hat,
+                                Expect_A_X, Expect_AA_Z_X) {
   rval <- list()
   for (i in 2:n_time_points) {
     rval[[i]] <- 0
@@ -726,7 +801,8 @@ expect_AA_YZ_X_MApp <- function(Z, X, n, nX, n_time_points,                     
         Expect_res_removed <- Expect_res[prob_remove, ] # nolint
         target_mat <- Expect_res[names_target, , drop = FALSE]
         target_mat <- apply(target_mat, 2, function(x) {matrix(x,  # nolint
-                                                               dim(Z[[j]])[2], dim(Z[[j]])[2]) %*%
+                                                               dim(Z[[j]])[2],
+                                                           dim(Z[[j]])[2]) %*%
             matrix(beta_hat[paste("Z_", i, "_", 1:dim(Z[[j]])[2], sep = "")],
                    nrow = dim(Z[[j]])[2])
         })
@@ -735,11 +811,13 @@ expect_AA_YZ_X_MApp <- function(Z, X, n, nX, n_time_points,                     
         }
       } else {
         target_mat <- matrix(beta_hat[paste("Z_", j, "_", 1:dim(Z[[j]])[2],
-                                            sep = "")], ncol = dim(Z[[j]])[2]) %*%
+                                            sep = "")],
+                             ncol = dim(Z[[j]])[2]) %*%
           Expect_res[paste("expz_", j, "_",
                            1:dim(Z[[j]])[2], sep = ""), , drop = FALSE]
         target_mat <- t(t(Expect_res[paste("expaz_", i, "_", 1:dim(Z[[i]])[2],
-                                           sep = ""), , drop = FALSE]) * as.numeric(target_mat))
+                                           sep = ""), , drop = FALSE]) *
+                          as.numeric(target_mat))
         prob_remove <- c(paste("prob", i, sep = ""),  # nolint
                          paste("prob", j, sep = ""))
         Expect_res_removed <- apply(Expect_res[prob_remove, ,  # nolint

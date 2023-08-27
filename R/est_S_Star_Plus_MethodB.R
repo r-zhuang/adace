@@ -222,10 +222,10 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
     coefs_Z_1X[[i]][1, ] <- coefs_Z_1X[[i]][1, ] + coef_raw[nrow(coef_raw), ]
   }
   # Calculate required integrations and assigning names for each column
-  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points,    # nolint
+  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points,
                       gammas = coefs_A_XZ, alphas = coefs_Z_1X,
                       Sigmas = sigma_mats_Z)
-  Expect_res_t <- t(Expect_res)                                                     # nolint
+  Expect_res_t <- t(Expect_res)
   names_vec <- NULL
   for (i in 2:n_time_points) {
     z_dim <- dim(Z[[i]])[2]
@@ -284,7 +284,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   }
   res_main <- sum(TRT * A[, n_time_points] * Y - (1 - TRT) *
                     A[, n_time_points] *
-                    Expect_A_X*Y / prod_A) / sum(TRT * A[, n_time_points])    # nolint
+                    Expect_A_X*Y / prod_A) / sum(TRT * A[, n_time_points])
   residual <- (sum((1 - TRT) * A[, n_time_points] * Expect_A_X * Y / prod_A) /
                  sum(TRT * A[, n_time_points])) * (1 - sum(TRT) / sum(1 - TRT))
   estimator <- res_main + residual
@@ -346,7 +346,8 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
     partial_g4_alpha_x <- matrix(rep(NA, dim_z * dim(X)[2]), ncol = dim_z)
     for (j in 1:dim_z) {
       partial_g4_alpha_x[, j] <- apply(t(X) %*%
-                                         diag(as.vector(partial_vec[, j])), 1, mean)
+                                         diag(as.vector(partial_vec[, j])), 1,
+                                       mean)
     }
     partial_g4_alpha[[i]] <- -solve(sigma_mats_Z[[i]]) %*%
       t(rbind(partial_g4_alpha_1, partial_g4_alpha_x, partial_g4_alpha_1))
@@ -365,7 +366,8 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
                  (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
       partial_g4_gamma[[i]] <- -c(mean(constant * vec1),
                                   apply(t(X) %*%
-                                          diag(as.vector(constant * vec2)), 1, mean))
+                                          diag(as.vector(constant * vec2)), 1,
+                                        mean))
     } else {
       constant <- (1 - TRT) * A[, n_time_points] * Y /
         (prod_A / preds_A_XZ_clean[[i]])
@@ -381,7 +383,8 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
         (preds_A_XZ_clean[[i]]^2)
       partial_g4_gamma[[i]] <- -c(mean(constant * vec1),
                                   apply(t(X) %*%
-                                          diag(as.vector(constant * vec2)), 1, mean),
+                                          diag(as.vector(constant * vec2)), 1,
+                                        mean),
                                   apply(constant * vec3, 2, mean))
     }
   }
@@ -402,7 +405,8 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
       design_mat_sub <- design_mat[A[, (i - 1)] != 0, ]
       A_pred_sub <- preds_A_XZ_clean[[i]][A[, (i - 1)] != 0]  # nolint
       partial_g3_gamma[[i]] <- -t(design_mat_sub) %*% (design_mat_sub *
-                                                         A_pred_sub * (1 - A_pred_sub)) / n     # nolint
+                                                         A_pred_sub *
+                                                         (1 - A_pred_sub)) / n
     }
   }
 

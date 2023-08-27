@@ -220,7 +220,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
   }
 
   # Calculate required integrations and assigning names for each column
-  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points,  # nolint
+  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points,
                       gammas = coefs_A_XZ, alphas = coefs_Z1_1X,
                       Sigmas = sigma_mats_Z)
   Expect_res_t <- t(Expect_res) # nolint
@@ -497,7 +497,7 @@ est_S_Plus_Plus_MethodB <- function(X, A, Z, Y, TRT) { # nolint
                                ncol = dim(Z[[i]])[2])
   }
   # Calculate required integrations and assigning names for each column
-  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points, # nolint
+  Expect_res <- apply(X, 1, Expect_function1D_BU, n_time_points = n_time_points,
                       gammas = coefs_A_XZ, alphas = coefs_Z0_1X,
                       Sigmas = sigma_mats_Z)
   Expect_res_t <- t(Expect_res)  # nolint

@@ -8,7 +8,8 @@ test_that("adace main function", {
   n_t <- 4 ## number of time points
   alphas <- list()
   gammas <- list()
-  z_para <- c(-1/p_z, -1/p_z, -1/p_z, -1/p_z, -0.5/p_z,-0.5/p_z, -0.5/p_z, -0.5/p_z)
+  z_para <- c(-1/p_z, -1/p_z, -1/p_z, -1/p_z, -0.5/p_z,-0.5/p_z, -0.5/p_z,
+              -0.5/p_z)
   Z <- list()
   beta = c(0.2, -0.3, -0.01, 0.02, 0.03, 0.04, rep(rep(0.02,p_z), n_t))
   beta_T = -0.2
@@ -20,23 +21,31 @@ test_that("adace main function", {
   Y1 <- 0
   A <- A1 <- A0 <- matrix(NA, nrow = j, ncol = n_t)
   gamma <- c(1,-.1,-0.05,0.05,0.05,.05)
-  A0[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] + (X %*% gamma[2:6])))))
-  A1[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] + (X %*% gamma[2:6])))))
+  A0[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+                                                    (X %*% gamma[2:6])))))
+  A1[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+                                                    (X %*% gamma[2:6])))))
   A[,1] <- A1[,1]*TRT + A0[,1]*(1-TRT)
 
   for(i in 2:n_t){
-    alphas[[i]] <- matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),p_z),ncol=p_z)
+    alphas[[i]] <- matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),
+                              p_z),ncol=p_z)
     gammas[[i]] <- c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(z_para[i],p_z))
-    Z0 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,]) + mvrnorm(j, mu = rep(0,p_z), Sigma = diag(sd_z_x,p_z))
+    Z0 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,]) + mvrnorm(j, mu = rep(0,p_z),
+                                                      Sigma = diag(sd_z_x,p_z))
     Z1 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,])+alphas[[i]][7,] +
       mvrnorm(j, mu = rep(0,p_z), Sigma = diag(sd_z_x,p_z))
     Z[[i]] <- Z1*TRT + Z0*(1-TRT)
     Y0 <- (Y0 + Z0 %*% matrix(beta[ (7 + (i-1)*p_z): (6+p_z*i)],ncol = 1) )[,1]
     Y1 <- (Y1 + Z1 %*% matrix(beta[ (7 + (i-1)*p_z): (6+p_z*i)],ncol = 1) )[,1]
     A0[,i] <- rbinom(j, size = 1,
-                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+Z0%*%matrix(gammas[[i]][7: (7+p_z-1)], ncol=1))[,1])))*A0[,i-1]
+                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+
+                                         Z0%*%matrix(gammas[[i]][7: (7+p_z-1)],
+                                                     ncol=1))[,1])))*A0[,i-1]
     A1[,i] <- rbinom(j, size = 1,
-                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+Z1%*%matrix(gammas[[i]][7: (7+p_z-1)], ncol=1))[,1])))*A1[,i-1]
+                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+
+                                         Z1%*%matrix(gammas[[i]][7: (7+p_z-1)],
+                                                     ncol=1))[,1])))*A1[,i-1]
 
     A[,i] <- A1[,i]*TRT + A0[,i]*(1-TRT)
   }
@@ -73,7 +82,7 @@ test_that("adace main function", {
   expect_equal(length(fit3), 6)
   expect_equal(length(fit4), 6)
   # Test warning message
-  Y <- Y1 * TRT + Y0 * (1 - TRT)                                                    # nolint
+  Y <- Y1 * TRT + Y0 * (1 - TRT)
   A_3[101:200] <- 0
   Y[A_3 == 0] <- NA
   message1 <- capture_message(fit1 <- est_S_Plus_Plus_MethodA(X, A, Z, Y, TRT))
@@ -83,7 +92,7 @@ test_that("adace main function", {
   expect_equal(message2$message,
                "prediction from a rank-deficient fit may be misleading")
   #### Test utility function ####
-  A <- mat_vec(1:5)                                                                # nolint
+  A <- mat_vec(1:5)
   expect_equal(Rank(A), 5)
   expect_equal(NA_replace(rep(NA, 3)), c(999, 999, 999))
   expect_equal(sum(round(inv_svd(A) - solve(A), 5) == matrix(0, 5, 5)), 25)
@@ -111,7 +120,8 @@ test_that("adace main function", {
   n_t <- 3 ## number of time points
   alphas <- list()
   gammas <- list()
-  z_para <- c(-1/p_z, -1/p_z, -1/p_z, -1/p_z, -0.5/p_z,-0.5/p_z, -0.5/p_z, -0.5/p_z)
+  z_para <- c(-1/p_z, -1/p_z, -1/p_z, -1/p_z, -0.5/p_z,-0.5/p_z, -0.5/p_z,
+              -0.5/p_z)
   Z <- list()
   beta = c(0.2, -0.3, -0.01, 0.02, 0.03, 0.04, rep(rep(0.02,p_z), n_t))
   beta_T = -0.2
@@ -123,23 +133,31 @@ test_that("adace main function", {
   Y1 <- 0
   A <- A1 <- A0 <- matrix(NA, nrow = j, ncol = n_t)
   gamma <- c(1,-.1,-0.05,0.05,0.05,.05)
-  A0[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] + (X %*% gamma[2:6])))))
-  A1[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] + (X %*% gamma[2:6])))))
+  A0[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+                                                    (X %*% gamma[2:6])))))
+  A1[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+                                                    (X %*% gamma[2:6])))))
   A[,1] <- A1[,1]*TRT + A0[,1]*(1-TRT)
 
   for(i in 2:n_t){
-    alphas[[i]] <- matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),p_z),ncol=p_z)
+    alphas[[i]] <- matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),p_z),
+                          ncol=p_z)
     gammas[[i]] <- c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(z_para[i],p_z))
-    Z0 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,]) + mvrnorm(j, mu = rep(0,p_z), Sigma = diag(sd_z_x,p_z))
+    Z0 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,]) + mvrnorm(j, mu = rep(0,p_z),
+                                                      Sigma = diag(sd_z_x,p_z))
     Z1 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,])+alphas[[i]][7,] +
       mvrnorm(j, mu = rep(0,p_z), Sigma = diag(sd_z_x,p_z))
     Z[[i]] <- Z1*TRT + Z0*(1-TRT)
     Y0 <- (Y0 + Z0 %*% matrix(beta[ (7 + (i-1)*p_z): (6+p_z*i)],ncol = 1) )[,1]
     Y1 <- (Y1 + Z1 %*% matrix(beta[ (7 + (i-1)*p_z): (6+p_z*i)],ncol = 1) )[,1]
     A0[,i] <- rbinom(j, size = 1,
-                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+Z0%*%matrix(gammas[[i]][7: (7+p_z-1)], ncol=1))[,1])))*A0[,i-1]
+                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+
+                                         Z0%*%matrix(gammas[[i]][7: (7+p_z-1)],
+                                                     ncol=1))[,1])))*A0[,i-1]
     A1[,i] <- rbinom(j, size = 1,
-                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+Z1%*%matrix(gammas[[i]][7: (7+p_z-1)], ncol=1))[,1])))*A1[,i-1]
+                     prob = 1/(1+exp(-(gammas[[i]][1]+(X%*%gammas[[i]][2:6])+
+                                         Z1%*%matrix(gammas[[i]][7: (7+p_z-1)],
+                                                     ncol=1))[,1])))*A1[,i-1]
 
     A[,i] <- A1[,i]*TRT + A0[,i]*(1-TRT)
   }
