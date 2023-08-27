@@ -156,7 +156,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   for (i in 2:n_time_points) {
     Z_cp[[i]][A[, (i - 1)] == 0] <- 0
   }
-  Z_mat <- matrix(unlist(Z), nrow = dim(X)[1]) # nolint
+  Z_mat <- matrix(unlist(Z[-1]), nrow = dim(X)[1]) # nolint
 
   # Provide column names for X, Z, A
   X_col_names <- paste("X_", 1:dim(X)[2], sep = "")   # nolint
@@ -164,11 +164,11 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   colnames(X) <- X_col_names
   colnames(A) <- A_col_names
   Z_col_names <- list()                               # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     part1 <- paste("Z_", i, sep = "")
     Z_col_names[[i]] <- paste(part1, 1:dim(Z[[i]])[2], sep = "")
   }
-  colnames(Z_mat) <- unlist(Z_col_names)
+  colnames(Z_mat) <- unlist(Z_col_names[-1])
   data <- data.frame(X, TRT, Z_mat, Y, A)
 
   # Model adherence given X, Z using a logistic model
@@ -196,18 +196,19 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   # Model Z given X and estimate variance-covariance of Z given X
   models_Z_X <- list()                                            # nolint
   sigma_mats_Z <- list()                                          # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     models_Z_X[[i]] <- lm(Z_mat[, Z_col_names[[i]]] ~ X + TRT)
     if (dim(Z[[i]])[2] > 1) {
-      sigma_mats_Z[[i]] <- diag(apply(models_Z_X[[i]]$residuals, 2, var))
+      sigma_mats_Z[[i]] <- cov(models_Z_X[[i]]$residuals)
     } else {
-      sigma_mats_Z[[i]] <- matrix(var(models_Z_X[[i]]$residuals), 1, 1)
+      sigma_mats_Z[[i]] <- matrix(var(models_Z_X[[i]]$residuals),
+                                  1, 1)
     }
   }
 
   # Predict Z using models.Z.X
   Zs_pred <- list()                                             # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
 
     Zs_pred[[i]] <- predict(models_Z_X[[i]],
                             newdata = data.frame(X, TRT = rep(1, n)))
@@ -215,7 +216,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
 
   # Estimate alpha of Z_i given T for 1 (intercept) and Xs
   coefs_Z_1X <- list()                                         # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     coef_raw <- matrix(coef(models_Z_X[[i]]), ncol = dim(Z[[i]])[2])
     coefs_Z_1X[[i]] <- matrix(coef_raw[1:(dim(X)[2]+1), ],      # nolint
                               ncol = dim(Z[[i]])[2])
@@ -227,7 +228,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
                       Sigmas = sigma_mats_Z)
   Expect_res_t <- t(Expect_res)                                                     # nolint
   names_vec <- NULL
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     z_dim <- dim(Z[[i]])[2]
     names_prob <- paste("prob", i, sep = "")
     names_expa <- paste("expa", i, sep = "")
@@ -238,6 +239,12 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
                    names_expa, names_expaz)
   }
   colnames(Expect_res_t) <- names_vec
+
+  prob1_expa1 <- cbind(preds_A_XZ[[1]],preds_A_XZ[[1]]*(1-preds_A_XZ[[1]]))
+  colnames(prob1_expa1) <- c("prob1","expa1")
+  Expect_res_t <- cbind(Expect_res_t,prob1_expa1)
+
+  names_vec <- c(names_vec, c("prob1","expa1"))
 
   # Calculate the probability of adherence at the end of study
   probs_vec <- paste("prob", 1:n_time_points, sep = "")
@@ -251,17 +258,22 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   Expect_AZ_X <- list()   # nolint
   Expect_AA_X <- list()   # nolint
   Expect_AA_Z_X <- list()   # nolint
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
     prob_remove <- paste("prob", i, sep = "")
     Expect_AZ_X[[i]] <- Expect_A_X *
       Expect_res_t[, grepl(names_target[1], names_vec)] /
       Expect_res_t[, prob_remove]
-    Expect_AA_X[[i]] <- Expect_A_X *
-      Expect_res_t[, grepl(names_target[2], names_vec)] /
-      Expect_res_t[, prob_remove]
     Expect_AA_Z_X[[i]] <-  Expect_A_X *
       Expect_res_t[, grepl(names_target[3], names_vec)] /
+      Expect_res_t[, prob_remove]
+  }
+
+  for (i in 1:n_time_points) {
+    names_target <- paste(c("expz", "expa", "expaz"), i, sep = "")
+    prob_remove <- paste("prob", i, sep = "")
+    Expect_AA_X[[i]] <- Expect_A_X *
+      Expect_res_t[, grepl(names_target[2], names_vec)] /
       Expect_res_t[, prob_remove]
   }
 
@@ -283,11 +295,13 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
 
   # At each time point, for each dimension of Z, we have an estimation equation
   # g2 = X(Z_i - X\alpha), thus there will be layers of for loop.
-  covariate_long <- lapply(models_Z_X, model.matrix.lm)
+  covariate_long <- vector("list",n_time_points)
+  covariate_long[2:n_time_points] <- lapply(models_Z_X[-1], model.matrix.lm)
+
   g2 <- list()
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     g2_main <- (models_Z_X[[i]]$model$`Z_mat[, Z_col_names[[i]]]`
-                 - predict(models_Z_X[[i]]))
+                - predict(models_Z_X[[i]]))
     if (dim(Z[[i]])[2] > 1) {
       dim_z <- dim(g2_main)[2]
       res <- list()
@@ -305,7 +319,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   g3 <- list()
   for (i in 1:n_time_points) {
     if (i == 1) {
-      g3[[i]] <- (A[, i] - preds_A_XZ_clean[[i]]) * cbind(rep(1, n), X, Z[[i]])
+      g3[[i]] <- (A[, i] - preds_A_XZ_clean[[i]]) * cbind(rep(1, n), X)
     } else {
       g3[[i]] <- A[, (i - 1)] * (A[, i] - preds_A_XZ_clean[[i]]) *
         cbind(rep(1, n), X, Z[[i]])
@@ -325,7 +339,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   # Estimating expection of deriatives using sample averages
   partial_g4_alpha <- list()
   part1_partial <- (1 - TRT) * A[, n_time_points] * Y / (prod_A)
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     dim_z <- dim(Z[[i]])[2]
     partial_vec <- matrix(part1_partial * (Expect_AZ_X[[i]] - Expect_A_X *
                                              Zs_pred[[i]]), ncol = dim_z)
@@ -333,7 +347,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
     partial_g4_alpha_x <- matrix(rep(NA, dim_z * dim(X)[2]), ncol = dim_z)
     for (j in 1:dim_z) {
       partial_g4_alpha_x[, j] <- apply(t(X) %*%
-                                 diag(as.vector(partial_vec[, j])), 1, mean)
+                                         diag(as.vector(partial_vec[, j])), 1, mean)
     }
     partial_g4_alpha[[i]] <- -solve(sigma_mats_Z[[i]]) %*%
       t(rbind(partial_g4_alpha_1, partial_g4_alpha_x, partial_g4_alpha_1))
@@ -341,33 +355,47 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
 
   partial_g4_gamma <- list()
   for (i in 1:n_time_points) {
-    constant <- (1 - TRT) * A[, n_time_points] * Y /
-      (prod_A / preds_A_XZ_clean[[i]])
-    vec1 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
-               Expect_A_X * preds_A_XZ_clean[[i]] *
-               (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
-    vec2 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
-               Expect_A_X * preds_A_XZ_clean[[i]] *
-               (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
-    vec3 <- ((Expect_AA_Z_X[[i]] * preds_A_XZ_clean[[i]]) -
-               Expect_A_X * preds_A_XZ_clean[[i]] *
-              (1 - preds_A_XZ_clean[[i]]) * Z_cp[[i]]) /
-              (preds_A_XZ_clean[[i]]^2)
-    partial_g4_gamma[[i]] <- -c(mean(constant * vec1),
-                                apply(t(X) %*%
-                                diag(as.vector(constant * vec2)), 1, mean),
-                                apply(constant * vec3, 2, mean))
+    if (i == 1) {
+      constant <- (1 - TRT) * A[, n_time_points] * Y /
+        (prod_A / preds_A_XZ_clean[[i]])
+      vec1 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
+                 Expect_A_X * preds_A_XZ_clean[[i]] *
+                 (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
+      vec2 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
+                 Expect_A_X * preds_A_XZ_clean[[i]] *
+                 (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
+      partial_g4_gamma[[i]] <- -c(mean(constant * vec1),
+                                  apply(t(X) %*%
+                                          diag(as.vector(constant * vec2)), 1, mean))
+    } else {
+      constant <- (1 - TRT) * A[, n_time_points] * Y /
+        (prod_A / preds_A_XZ_clean[[i]])
+      vec1 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
+                 Expect_A_X * preds_A_XZ_clean[[i]] *
+                 (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
+      vec2 <- (Expect_AA_X[[i]] * preds_A_XZ_clean[[i]] -
+                 Expect_A_X * preds_A_XZ_clean[[i]] *
+                 (1 - preds_A_XZ_clean[[i]])) / (preds_A_XZ_clean[[i]]^2)
+      vec3 <- ((Expect_AA_Z_X[[i]] * preds_A_XZ_clean[[i]]) -
+                 Expect_A_X * preds_A_XZ_clean[[i]] *
+                 (1 - preds_A_XZ_clean[[i]]) * Z_cp[[i]]) /
+        (preds_A_XZ_clean[[i]]^2)
+      partial_g4_gamma[[i]] <- -c(mean(constant * vec1),
+                                  apply(t(X) %*%
+                                          diag(as.vector(constant * vec2)), 1, mean),
+                                  apply(constant * vec3, 2, mean))
+    }
   }
 
   partial_g2_alpha <- list()
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     partial_g2_alpha[[i]] <- -t(covariate_long[[i]]) %*% covariate_long[[i]] / n
   }
 
   partial_g3_gamma <- list()
   for (i in 1:n_time_points) {
     if (i == 1) {
-      design_mat <- cbind(rep(1, n), X, Z[[i]])
+      design_mat <- cbind(rep(1, n), X)
       partial_g3_gamma[[i]] <- -t(design_mat) %*% (
         design_mat * preds_A_XZ_clean[[i]] * (1 - preds_A_XZ_clean[[i]])) / n
     } else {
@@ -375,7 +403,7 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
       design_mat_sub <- design_mat[A[, (i - 1)] != 0, ]
       A_pred_sub <- preds_A_XZ_clean[[i]][A[, (i - 1)] != 0]  # nolint
       partial_g3_gamma[[i]] <- -t(design_mat_sub) %*% (design_mat_sub *
-                                A_pred_sub * (1 - A_pred_sub)) / n     # nolint
+                                                         A_pred_sub * (1 - A_pred_sub)) / n     # nolint
     }
   }
 
@@ -383,8 +411,8 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   tau_est <- estimator
   data_long <- cbind(data, subj = seq_len(nrow(data)))
   data_long <- reshape2::melt(data_long, id.vars = c(X_col_names, "TRT", "Y",
-                                                    A_col_names, "subj"),
-                             variable.name = "Z")
+                                                     A_col_names, "subj"),
+                              variable.name = "Z")
   temp <- list()
   temp[[1]] <- g2[[1]]
   for (i in 2:n_time_points) {
@@ -394,19 +422,19 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
       for (j in 1:dim_z) {
         res[[j]] <- matrix(0, nrow = n, ncol = ncol(g2[[i]][[j]]))
         res[[j]][!is.na(data_long$value[data_long$Z == Z_col_names[[i]][j]]),
-                 ] <- g2[[i]][[j]]
+        ] <- g2[[i]][[j]]
       }
       temp[[i]] <- res
     } else {
       temp[[i]] <- matrix(0, nrow = n, ncol = ncol(g2[[i]]))
       temp[[i]][!is.na(data_long$value[data_long$Z == Z_col_names[[i]]]),
-                ] <- g2[[i]]
+      ] <- g2[[i]]
     }
 
   }
 
   se_main <- 0
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     dim_z <- dim(Z[[i]])[2]
     if (dim_z > 1) {
       for (j in 1:dim_z) {
@@ -434,11 +462,11 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   res1 <- sum(TRT * A[, n_time_points] * Y) / sum(TRT * A[, n_time_points])
   res0 <- sum((1 - TRT) * A[, n_time_points] * Expect_A_X * Y / prod_A) /
     sum(TRT * A[, n_time_points]) * (sum(TRT) / sum(1 - TRT))
-  se1  <-  sd(1 / mean(g5) * (TRT * A[, n_time_points] * Y - res1 * g5)) /
+  se_res1  <-  sd(1 / mean(g5) * (TRT * A[, n_time_points] * Y - res1 * g5)) /
     sqrt(n)
 
   se_main_se0 <- 0
-  for (i in 1:n_time_points) {
+  for (i in 2:n_time_points) {
     dim_z <- dim(Z[[i]])[2]
     if (dim_z > 1) {
       for (j in 1:dim_z) {
@@ -458,14 +486,14 @@ est_S_Star_Plus_MethodB <- function(X, A, Z, Y, TRT){                  # nolint
   }
 
   se0 <- se_main_se0 + ((1 - TRT) * A[, n_time_points] * Expect_A_X * Y /
-                          (prod_A) - res0 * g5 - se_residual) / mean(g5)
-  se0 <- sd(se0) / sqrt(n)
+                          (prod_A) - res0 * g5) / mean(g5)
+  se_res0 <- sd(se0) / sqrt(n)
   RVAL <- list(trt_diff = estimator,                                  # nolint
              se = se,
              res1 = res1,
              res0 = res0,
-             se_res1 = se1,
-             se_res0 = se0
+             se_res1 = se_res1,
+             se_res0 = se_res0
   )
   return(RVAL)
 }
