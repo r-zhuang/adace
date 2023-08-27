@@ -69,67 +69,66 @@
 #'
 #' @examples
 #'  library(MASS)
-#'  n = 1000
-#'  alpha1 = matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),3),ncol=3)
-#'  alpha2 = matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.9),4),ncol=4)
-#'  alpha3 = matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.9),5),ncol=5)
-#'  beta = c(0.2, -0.3, -0.01, 0.02, 0.03, 0.04, rep(0.02,3),
-#'  rep(0.04,4), rep(0.07,5))
+#'  j<- 800
+#'  p_z <- 6 ## dimension of Z at each time point
+#'  n_t <- 4 ## number of time points
+#'  alphas <- list()
+#'  gammas <- list()
+#'  z_para <- c(-1/p_z, -1/p_z, -1/p_z, -1/p_z, -0.5/p_z,-0.5/p_z, -0.5/p_z,
+#'  -0.5/p_z)
+#'  Z <- list()
+#'  beta = c(0.2, -0.3, -0.01, 0.02, 0.03, 0.04, rep(rep(0.02,p_z), n_t))
 #'  beta_T = -0.2
-#'  gamma1 = c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(-1/3,3))     #setting 1
-#'  gamma2 = c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(-2/4,4))     #setting 1
-#'  gamma3 = c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(-2.5/5,5))   #setting 1
 #'  sd_z_x = 0.4
-#'  X = mvrnorm(n, mu=c(1,5,6,7,8), Sigma=diag(1,5))
-#'  TRT = rbinom(n, size = 1,  prob = 0.5)
-#'  Z0_1 = alpha1[1,]+(X%*%alpha1[2:6,])           + mvrnorm(n, mu = rep(0,3),
-#'  Sigma = diag(sd_z_x,3))
-#'  Z1_1 = alpha1[1,]+(X%*%alpha1[2:6,])+alpha1[7,] + mvrnorm(n, mu = rep(0,3),
-#'  Sigma = diag(sd_z_x,3))
-#'  Z_1  = Z1_1 * TRT+Z0_1 * (1-TRT)
+#'  X = mvrnorm(j, mu=c(1,5,6,7,8), Sigma=diag(1,5))
+#'  TRT = rbinom(j, size = 1,  prob = 0.5)
+#'  Y_constant <- beta[1]+(X%*%beta[2:6])
+#'  Y0 <- 0
+#'  Y1 <- 0
+#'  A <- A1 <- A0 <- matrix(NA, nrow = j, ncol = n_t)
+#'  gamma <- c(1,-.1,-0.05,0.05,0.05,.05)
+#'  A0[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+#'  (X %*% gamma[2:6])))))
+#'  A1[,1] <- rbinom(j, size = 1, prob = 1/(1+exp(-(gamma[1] +
+#'  (X %*% gamma[2:6])))))
+#'  A[,1] <- A1[,1]*TRT + A0[,1]*(1-TRT)
+
+#'  for(i in 2:n_t){
+#'    alphas[[i]] <- matrix(rep(c(2.3, -0.3, -0.01, 0.02, 0.03, 0.04, -0.4),
+#'    p_z),ncol=p_z)
+#'    gammas[[i]] <- c(1, -0.1, 0.2, 0.2, 0.2, 0.2, rep(z_para[i],p_z))
+#'    Z0 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,]) + mvrnorm(j, mu = rep(0,p_z)
+#'    , Sigma = diag(sd_z_x,p_z))
+#'    Z1 <- alphas[[i]][1,]+(X%*%alphas[[i]][2:6,])+alphas[[i]][7,] +
+#'      mvrnorm(j, mu = rep(0,p_z), Sigma = diag(sd_z_x,p_z))
+#'    Z[[i]] <- Z1*TRT + Z0*(1-TRT)
+#'    Y0 <- (Y0 + Z0 %*% matrix(beta[ (7 + (i-1)*p_z):
+#'    (6+p_z*i)],ncol = 1) )[,1]
+#'    Y1 <- (Y1 + Z1 %*% matrix(beta[ (7 + (i-1)*p_z):
+#'    (6+p_z*i)],ncol = 1) )[,1]
+#'    A0[,i] <- rbinom(j, size = 1,
+#'                     prob = 1/(1+exp(-(gammas[[i]][1]+
+#'                     (X%*%gammas[[i]][2:6])+Z0%*%matrix(gammas[[i]][7:
+#'                     (7+p_z-1)], ncol=1))[,1])))*A0[,i-1]
+#'    A1[,i] <- rbinom(j, size = 1,
+#'                     prob = 1/(1+exp(-(gammas[[i]][1]+
+#'                     (X%*%gammas[[i]][2:6])+Z1%*%matrix(gammas[[i]][7:
+#'                     (7+p_z-1)], ncol=1))[,1])))*A1[,i-1]
 #'
-#'  Z0_2 = alpha2[1,]+(X%*%alpha2[2:6,])           + mvrnorm(n, mu = rep(0,4),
-#'  Sigma = diag(sd_z_x,4))
-#'  Z1_2 = alpha2[1,]+(X%*%alpha2[2:6,])+alpha2[7,] + mvrnorm(n, mu = rep(0,4),
-#'  Sigma = diag(sd_z_x,4))
-#'  Z_2  = Z1_2 * TRT + Z0_2 * (1-TRT)
-#'
-#'  Z0_3 = alpha3[1,]+(X%*%alpha3[2:6,])           + mvrnorm(n, mu = rep(0,5),
-#'  Sigma = diag(sd_z_x,5))
-#'  Z1_3 = alpha3[1,]+(X%*%alpha3[2:6,])+alpha3[7,] + mvrnorm(n, mu = rep(0,5),
-#'  Sigma = diag(sd_z_x,5))
-#'  Z_3  = Z1_3 * TRT + Z0_3 * (1-TRT)
-#'  Z = list(Z_1, Z_2, Z_3)
-#'  Y0 = (beta[1]+(X %*% beta[2:6]) + Z0_1 %*% matrix(beta[7:9], ncol = 1) +
-#'  Z0_2 %*% matrix(beta[10:13], ncol = 1) + Z0_3 %*% beta[14:18] +
-#'  rnorm(n, mean = 0, sd = 0.3))[,1]
-#'  Y1 = (beta[1] + (X %*% beta[2:6]) + Z1_1 %*% matrix(beta[7:9], ncol = 1) +
-#'  Z1_2 %*% matrix(beta[10:13], ncol = 1) + Z1_3 %*% beta[14:18] + beta_T +
-#'  rnorm(n, mean = 0, sd = 0.3))[,1]
-#'  Y  = Y1 * TRT + Y0 * (1 - TRT)
-#'
-#'  A0_1 = rbinom(n, size = 1, prob = 1 / (1 + exp(-(gamma1[1] +
-#'  (X %*% gamma1[2:6]) + Z0_1 %*% matrix(gamma1[7:9], ncol = 1))[,1])))
-#'  A1_1 = rbinom(n, size = 1, prob = 1/(1 + exp(-(gamma1[1] +
-#'  (X %*% gamma1[2:6]) + Z1_1 %*% matrix(gamma1[7:9], ncol = 1))[,1])))
-#'  A_1  = A1_1 * TRT + A0_1 * (1 - TRT)
-#'
-#'  A0_2 = rbinom(n, size = 1, prob = 1/(1 + exp(-(gamma2[1] +
-#'  (X %*% gamma2[2:6]) + Z0_2 %*% matrix(gamma2[7:10], ncol = 1))[,1]))) * A0_1
-#'  A1_2 = rbinom(n, size = 1, prob = 1/(1 + exp(-(gamma2[1] +
-#'  (X %*% gamma2[2:6]) + Z1_2 %*% matrix(gamma2[7:10], ncol = 1))[,1]))) * A1_1
-#'  A_2  = A1_2 * TRT + A0_2 * (1 - TRT)
-#'
-#'  A0_3 = rbinom(n, size = 1, prob = 1/(1 + exp(-(gamma3[1] +
-#'  (X %*% gamma3[2:6]) + Z0_3 %*% matrix(gamma3[7:11], ncol = 1))[,1]))) * A0_2
-#'  A1_3 = rbinom(n, size = 1, prob = 1/(1 + exp(-(gamma3[1] +
-#'  (X %*% gamma3[2:6]) + Z1_3 %*% matrix(gamma3[7:11], ncol = 1))[,1]))) * A1_2
-#'  A_3  = A1_3 * TRT + A0_3 * (1 - TRT)
-#'  A = cbind(A_1, A_2, A_3)
-#'
-#'  Z[[2]][A_1 == 0] <- NA
-#'  Z[[3]][A_2 == 0] <- NA
-#'  Y[A_3 == 0]   <- NA
+#'    A[,i] <- A1[,i]*TRT + A0[,i]*(1-TRT)
+#'  }
+#'  Y0 <- Y0 + rnorm(j, mean = 0, sd = 0.3) + Y_constant
+#'  Y1 <- Y1 + + beta_T + rnorm(j, mean = 0, sd = 0.3) + Y_constant
+
+#'  Y <- as.vector( Y1*TRT+Y0*(1-TRT))
+
+#'  for(i in 2:n_t){
+#'    Z[[i]][A[,(i-1)]==0,] <- NA
+#'  }
+
+#'  Z[[1]] <- matrix(NA, nrow=nrow(Z1),ncol=ncol(Z1))
+
+#'  Y[A[,n_t] == 0] <- NA
 #'  # estimate the treatment difference
 #'  fit <- est_S_Star_Plus_MethodA(X, A, Z, Y, TRT)
 #'  fit
