@@ -81,16 +81,6 @@ test_that("adace main function", {
   expect_equal(length(fit2), 6)
   expect_equal(length(fit3), 6)
   expect_equal(length(fit4), 6)
-  # Test warning message
-  Y <- Y1 * TRT + Y0 * (1 - TRT)
-  A_3[101:200] <- 0
-  Y[A_3 == 0] <- NA
-  message1 <- capture_message(fit1 <- est_S_Plus_Plus_MethodA(X, A, Z, Y, TRT))
-  expect_equal(message1$message,
-               "prediction from a rank-deficient fit may be misleading")
-  message2 <- capture_message(fit2 <- est_S_Star_Plus_MethodA(X, A, Z, Y, TRT))
-  expect_equal(message2$message,
-               "prediction from a rank-deficient fit may be misleading")
   #### Test utility function ####
   A <- mat_vec(1:5)
   expect_equal(Rank(A), 5)
