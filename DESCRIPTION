@@ -1,6 +1,6 @@
 Package: adace
 Title: Estimator of the Adherer Average Causal Effect
-Version: 1.0.1
+Version: 1.0.2
 Authors@R: c(
   person(
     given = "Jiaxun",
