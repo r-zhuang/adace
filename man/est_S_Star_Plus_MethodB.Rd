@@ -71,7 +71,7 @@ The est_S_Star_Plus_MethodB function produces estimation of treatment
 }
 \examples{
  library(MASS)
- j<- 800
+ j<- 500
  p_z <- 6 ## dimension of Z at each time point
  n_t <- 4 ## number of time points
  alphas <- list()
