@@ -36,21 +36,21 @@ fedora-clang-devel (r-devel)
 3. As noted in R-hub issue #560, this seems to be an Rhub issue and so can 
 likely be ignored.
 
-❯ On windows-x86_64-devel (r-devel)
+ On windows-x86_64-devel (r-devel)
   checking for non-standard things in the check directory ... NOTE
   Found the following files/directories:
     ''NULL''
     
 4. Another that is only found on Windows (Server 2023, R-devel 64-bit):
 
-❯ On windows-x86_64-devel (r-devel)
+ On windows-x86_64-devel (r-devel)
   checking for detritus in the temp directory ... NOTE
   Found the following files/directories:
     'lastMiKTeXException'
 
 5. No mispelled words.
 
-❯ On fedora-clang-devel (r-devel)
+ On fedora-clang-devel (r-devel)
   checking CRAN incoming feasibility ... [4s/13s] NOTE
   Maintainer: ‘Run Zhuang <capecod0321@gmail.com>’
   
