@@ -10,14 +10,25 @@ library(adace)
 
 ## Setup
 
-The adace R package can be installed directly from CRAN using install.packages("adace") and then loaded into the the environment using library(adace). The package does have some dependencies, including reshape2, parcma, cuature, and MASS. It is recommended to install these packages if asked when installing adace.
+The adace R package can be installed directly from CRAN using 
+install.packages("adace") and then loaded into the the environment using 
+library(adace). The package does have some dependencies, including reshape2, 
+parcma, cuature, and MASS. It is recommended to install these packages 
+if asked when installing adace.
 
 
 ## Functions in adace
 
-There are 4 user functions in the package. Each of the functions calculate the adherers average causal estimate for a specified method and population. For example the function *est_S_Plus_Plus_MethodA* calculates the adherers estimator for Method A using population S++, the patients that can adhere to both treatment and control. Additional internal package functions are also listed in the package documentation and are utility functions called inside the user functions.
+There are 4 user functions in the package. Each of the functions calculate the 
+adherers average causal estimate for a specified method and population. 
+For example the function *est_S_Plus_Plus_MethodA* calculates the adherers 
+estimator for Method A using population S++, the patients that can adhere to 
+both treatment and control. Additional internal package functions are also 
+listed in the package documentation and are utility functions called inside 
+the user functions.
 
-All user functions contain the same set of arguments. The arguments are the following:
+All user functions contain the same set of arguments. The arguments are 
+the following:
 
 1. **X**: Matrix of baseline covariates
 2. **A**: Matrix of adherence indicators
@@ -25,18 +36,37 @@ All user functions contain the same set of arguments. The arguments are the foll
 4. **Y**: Vector of the primary endpoint
 5. **TRT**: Vector of a binary treatment assignment.
 
-Note that the functions in adace are expected to be used given a user supplied dataset. See the following articles for more details on data simulation and the estimation procedure:
+Note that the functions in adace are expected to be used given a user supplied 
+dataset. See the following articles for more details on data simulation and 
+the estimation procedure:
 
-1. Qu, Yongming, et al. "A general framework for treatment effect estimators considering patient adherence." *Statistics in Biopharmaceutical Research* 12.1 (2020): 1-18.
+1. Qu, Yongming, et al. "A general framework for treatment effect estimators 
+considering patient adherence." *Statistics in Biopharmaceutical Research* 12.1 
+(2020): 1-18.
 
-2. Zhang, Ying, et al. "Statistical inference on the estimators of the adherer average causal effect." *Statistics in Biopharmaceutical Research* (2021): 1-4.
+2. Zhang, Ying, et al. "Statistical inference on the estimators of the adherer 
+average causal effect." *Statistics in Biopharmaceutical Research* (2021): 1-4.
 
 
 ## Simulated data example
 
-The following provides a simple example using simulated data to demonstrate the use of the package and the output it provides. Consider a clinical trial with a treatment and control. Each subject has 5 baseline covariates and subjects are followed up at 3 intermediate timepoints. At each intermediate timepoint, 3 intermediate measurements are measured for each patient. Lastly, the final endpoint occurs sometime after the 3rd follow up visit. However, at each timepoint, patients may experience an intercurrent event and drop out from the study. Therefore, the adherence of each patient is also measured at each timepoint. See the data generating model below.
+The following provides a simple example using simulated data to demonstrate the
+use of the package and the output it provides. Consider a clinical trial with a 
+treatment and control. Each subject has 5 baseline covariates and subjects are 
+followed up at 3 intermediate timepoints. At each intermediate timepoint, 3 
+intermediate measurements are measured for each patient. Lastly, the final 
+endpoint occurs sometime after the 3rd follow up visit. However, at each 
+timepoint, patients may experience an intercurrent event and drop out from the 
+study. Therefore, the adherence of each patient is also measured at each 
+timepoint. See the data generating model below.
 
-The goal is to estimate the adherers average causal effect using Method A for population S++. Therefore, we generate data for X, Y, Z, TRT, and A. The data is first generated for all potential outcomes and then cleaned based on adherence status to create the observed data. We then use the function *est_S_Plus_Plus_MethodA* to get the estimate of the treatment effect and then compare it to the true treatment effect, calculated using the complete data with all potential outcomes. First we generate all potential outcome data as such:
+The goal is to estimate the adherers average causal effect using Method A for 
+population S++. Therefore, we generate data for X, Y, Z, TRT, and A. 
+The data is first generated for all potential outcomes and then cleaned based on
+adherence status to create the observed data. We then use the function 
+*est_S_Plus_Plus_MethodA* to get the estimate of the treatment effect and then 
+compare it to the true treatment effect, calculated using the complete data with
+all potential outcomes. First we generate all potential outcome data as such:
 
 ```{r}
 library(MASS)
@@ -114,7 +144,8 @@ str(TRT)
 str(A)
 ```
 
-Then we simply call the function and obtain our estimates. The package will provide the estimates and standard error for each arm and the treatment effect.
+Then we simply call the function and obtain our estimates. The package will 
+provide the estimates and standard error for each arm and the treatment effect.
 
 ```{r}
 fit <- est_S_Plus_Plus_MethodA(X, A, Z, Y, TRT)
@@ -134,10 +165,24 @@ true_diff
 
 ## Tips and Tricks
 
-1. The estimation procedure is sensitive to adherence. Specifically, if there is near perfect or almost no adherence at any of the intermediate timepoints, the standard error cannot be estimated due to matrix inversion. However, the point estimate can still be obtained. In these situations, the standard error can be calculated using a user defined bootstrap. 
+1. The estimation procedure is sensitive to adherence. Specifically, if there is
+near perfect or almost no adherence at any of the intermediate timepoints, the
+standard error cannot be estimated due to matrix inversion. However, the point
+estimate can still be obtained. In these situations, the standard error can be
+calculated using a user defined bootstrap. 
 
-2. The estimation procedure assumes that the intermediate timepoints are independent and have a strictly diagonal covariance matrix. Simulation results have show that the coverage probablities with correlated timepoints are low for each treatment arm, but the coverage probability for the treatment effect is good. However, it should be noted that the standard error may not be trusted in this case and should be compared to bootstrap.
+2. The estimation procedure assumes that the intermediate timepoints are 
+independent and have a strictly diagonal covariance matrix. Simulation results
+have show that the coverage probablities with correlated timepoints are low for
+each treatment arm, but the coverage probability for the treatment effect is 
+good. However, it should be noted that the standard error may not be trusted 
+in this case and should be compared to bootstrap.
 
-3. Most errors are caused by incompatible data structures of the arguments. The package will try to correct this, but please note the required data structure for each argument.
+3. Most errors are caused by incompatible data structures of the arguments. 
+The package will try to correct this, but please note the required data 
+structure for each argument.
 
-4. In Version 2 of the package, we assume that it is possible to dropout before the first intermediate timepoint. The adherence model is fitted at the first timepoint dependent only on the baseline covariates. See the above data generation process as an example. 
+4. In Version 2 of the package, we assume that it is possible to dropout before
+the first intermediate timepoint. The adherence model is fitted at the first
+timepoint dependent only on the baseline covariates. See the above data 
+generation process as an example. 
